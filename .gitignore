@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# emacs files
+*~
+# batch scripts
+*.bat
+# visual studio things
+.vs/

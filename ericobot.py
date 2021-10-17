@@ -14,6 +14,10 @@ from json_writer import JSON_Writer
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
+brick = os.getenv('BRICK')
+dix = os.getenv('DIX')
+kintorola = os.getenv('KINTOROLA')
+
 local_path = "C:\\Programming_Stuff\\Python Programs\\EricoBot\\resources\\"
 
 regular_prefix = 'EricoPls '
@@ -95,7 +99,7 @@ async def play_airhorn(ctx):
 
 # jokes dictionary for easy random selection    
 jokes_dict = {}
-jokes_dict["brice_sucks"] = local_path + "brice-sucks.mp3"
+jokes_dict["brick_sucks"] = local_path + "brick-sucks.mp3"
     
 @bot.command(name='joke', help='Play a funny prerecorded haha joke for the whole family!')
 async def make_joke(ctx):
@@ -111,14 +115,14 @@ async def scarra_laugh(ctx):
 async def chugjug(ctx):
 
     if rand.random() > 0.5:
-        if str(ctx.author) == "Acerola#8430":
+        if str(ctx.author) == kintorola:
             print ("Nah")
             await play_audio(ctx, local_path + "no.mp3")
-        elif str(ctx.author) == "Definitely Not Waffle#5050":
-            print ("lol_brice")
+        elif str(ctx.author) == brick:
+            print ("lol_getrekt")
             await play_audio(ctx, local_path + "existence.mp3")
-        elif str(ctx.author) == "Dax#0265":
-            print ("lol_dax")
+        elif str(ctx.author) == dix:
+            print ("lol_usuckkek")
             await play_audio(ctx, local_path + "man-oth.mp3")            
         else:
             await play_audio(ctx, local_path + "my-chugjug-with-you.mp3")

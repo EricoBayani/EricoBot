@@ -1,16 +1,13 @@
-import os
-import random as rand
-import discord 
-from discord.ext import commands
-from dotenv import load_dotenv
+# audioClipCommands.py
 
-load_dotenv()
+# import os
+# import random as rand
+# import discord 
+# from discord.ext import commands
+# from dotenv import load_dotenv
+from config import *
 
-brick = os.getenv('BRICK')
-dix = os.getenv('DIX')
-kintorola = os.getenv('KINTOROLA')
-
-local_path = "C:\\Programming_Stuff\\Python Programs\\EricoBot\\resources\\"
+# load_dotenv()
 
 # a generic command that will play any sound file into
 # voice when passed a file path to the sound.

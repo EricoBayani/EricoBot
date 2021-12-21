@@ -1,10 +1,5 @@
 # audioClipCommands.py
 
-# import os
-# import random as rand
-# import discord 
-# from discord.ext import commands
-# from dotenv import load_dotenv
 from config import *
 
 # load_dotenv()

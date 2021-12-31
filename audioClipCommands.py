@@ -12,13 +12,14 @@ async def play_audio(ctx, source_file):
 
     print (str(ctx.author) + " played used a command")
     voice_channel = ctx.author.voice
-    channel = None
 
     # print(type(voice_channel))
-
+    vc = ctx.voice_client
     if voice_channel != None:
-        channel = voice_channel.channel.name
-        vc = await voice_channel.channel.connect()
+
+        if vc is None:
+            vc = await voice_channel.channel.connect()
+        vc.stop()
         vc.play(discord.FFmpegPCMAudio(source=source_file, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe'))
         
         # Sleep while audio is playing.

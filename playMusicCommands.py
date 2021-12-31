@@ -9,8 +9,8 @@ pafy.set_api_key(yt_key)
 # https://stackoverflow.com/a/66116633 for the
 # audio streaming clarification
 @bot.command(name='play', help='play audio from a youtube link')
-async def play(ctx, url = 'https://youtu.be/_2quiyHfJQw'):
-
+async def play(ctx, url = None):
+    
     video = pafy.new(url)
 
     audiostream = video.getbestaudio()
@@ -21,16 +21,19 @@ async def play(ctx, url = 'https://youtu.be/_2quiyHfJQw'):
 
     print (str(ctx.author) + " played used a command")
     voice_channel = ctx.author.voice
-    channel = None
-
+    vc = ctx.voice_client
     if voice_channel != None:
-        channel = voice_channel.channel.name
-        vc = await voice_channel.channel.connect()
+
+        if vc is None:
+            vc = await voice_channel.channel.connect()
+        vc.stop()
         try:
             vc.play(discord.FFmpegPCMAudio(source=playurl, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
                                            before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
             await ctx.send('**Now playing:** {}'.format(url))
-            
+            # Sleep while audio is playing.
+
+            # await vc.disconnect()
         except Exception:
             await vc.disconnect()
             logging.warning('Failed vc.play function')
@@ -39,6 +42,7 @@ async def play(ctx, url = 'https://youtu.be/_2quiyHfJQw'):
         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
         await sent_message.delete(delay=5)
     # Delete command after the audio is done playing.
+    
     await ctx.message.delete()
 
 # playerCommand is a template function for controlling the bot who's currently playing music
@@ -48,69 +52,84 @@ async def play(ctx, url = 'https://youtu.be/_2quiyHfJQw'):
 # callback: what function to use i.e. vc.pause(), vc.resume()
 # oppositeState: what to check to avoid contradiction i.e. isPlaying() is opposite state to pause() command
 # errorString: message about the state and why it can't happen i.e. User tried to pause already paused video
-# async def playerCommand(ctx, vc, callback, oppositeState, errorString="Can't do that yet"):
-#     print('messing with player')
 
-#     # Gets voice channel of message author
+async def playerCommand(ctx, callback, errorString="Can't do that yet"):
+    print('messing with player')
 
-#     print (str(ctx.author) + " played used a command")
-#     voice_channel = ctx.author.voice
-#     channel = None
+    # Gets voice channel of message author
 
-#     if voice_channel != None:
-#         channel = voice_channel.channel.name
-#         if !oppositeState:
-#             try:
-#                 callback()
-#             except Exception:
-#                 await vc.disconnect()
-#                 logging.warning('Failed vc.pause function')
-#         else:
-#             sent_message = await ctx.send(errorString)
-#             await sent_message.delete(delay=5)
-#         # Sleep while audio is playing.
-#         while vc.is_playing():
-#             time.sleep(.1)
-#         await vc.disconnect()
-        
-#     else:
-#         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
-#         await sent_message.delete(delay=5)
-#     # Delete command after the audio is done playing.
-#     await ctx.message.delete()    
+    print (str(ctx.author) + " played used a command")
+    voice_channel = ctx.author.voice
+    channel = None
+
+    if voice_channel != None:
+        vc = ctx.voice_client
+        # if not oppositeState:
+        try:
+            callback()
+        except Exception:
+            await vc.disconnect()
+            logging.warning('Failed vc.pause function')
+            print('Failed vc.pause function')
+        # else:
+        #     sent_message = await ctx.send(errorString)
+        #     await sent_message.delete(delay=5)        
+    else:
+        sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
+        await sent_message.delete(delay=5)
+    # Delete command after the audio is done playing.
+    # await ctx.message.delete()
     
-# @bot.command(name='pause', help='pause the bot playing something')
+@bot.command(name='pause', help='pause the bot playing something')
+async def pause(ctx):
+    print("pausing")
+    vc = ctx.voice_client
+    await playerCommand(ctx, vc.pause, "Can't pause already paused song")
+    await ctx.message.delete()
+
+@bot.command(name='stop', help='stop the music bot')
+async def stop(ctx):
+    print("stopping")
+    vc = ctx.voice_client
+    await playerCommand(ctx, vc.stop, "Can't stop audio that is not connected to channel")
+    await ctx.message.delete()
+
+@bot.command(name='resume', help='resume the music bot')
+async def resume(ctx):
+    print("resuming")
+    vc = ctx.voice_client
+    await playerCommand(ctx, vc.resume, "Can't resume audio that is not connected to channel")
+    await ctx.message.delete()
+                      
+@bot.command(name='leave', help="tell the bot to leave the command because I'm too lazy to find out where to put a time out")
+async def leave(ctx):
+    print("leaving channel")
+    await ctx.voice_client.disconnect()
+    await ctx.message.delete()
+    
+    
 # async def pause(ctx):
 #     print('Attempting to play linked music')
 #     # Gets voice channel of message author
 
 #     print (str(ctx.author) + " played used a command")
 #     voice_channel = ctx.author.voice
-#     channel = None
 
 #     if voice_channel != None:
-#         channel = voice_channel.channel.name
-#         if vc.isplaying():
+#         vc = ctx.voice_client
+#         if vc.is_playing():
 #             try:
 #                 vc.pause()
 #             except Exception:
 #                 await vc.disconnect()
 #                 logging.warning('Failed vc.pause function')
+#                 print('Failed vc.pause function')
 #         else:
 #             sent_message = await ctx.send("Can't do that yet")
 #             await sent_message.delete(delay=5)
-#         # Sleep while audio is playing.
-#         while vc.is_playing():
-#             time.sleep(.1)
-#         await vc.disconnect()
         
 #     else:
 #         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
 #         await sent_message.delete(delay=5)
 #     # Delete command after the audio is done playing.
-#     await ctx.message.delete()
-# @bot.command(name='stop', help='stop the music bot')
-# async def stop(ctx):
-#     voice_channel = ctx.author.voice
-#     vc = 
-#     await playerCommand(ctx, 
+#     # await ctx.message.delete()

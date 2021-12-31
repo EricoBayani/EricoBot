@@ -1,9 +1,14 @@
 import os
 import random as rand
 import time
+import logging
+
 import discord 
 from discord.ext import commands
 from dotenv import load_dotenv
+
+
+logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 
 load_dotenv()
 

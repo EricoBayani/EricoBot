@@ -24,6 +24,8 @@ kintorola = os.getenv('KINTOROLA')
 
 local_path = "C:\\Programming_Stuff\\Python Programs\\EricoBot\\resources\\"
 
+yt_key = os.getenv('YT_KEY')
+
 # local_cache_writer = JSON_Writer()
 
 bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower], case_insensitive=True)

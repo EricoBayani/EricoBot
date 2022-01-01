@@ -8,6 +8,28 @@ pafy.set_api_key(yt_key)
 
 # https://stackoverflow.com/a/66116633 for the
 # audio streaming clarification
+music_queue = queue.Queue(50)
+async def playQueue(ctx):
+    nexturl = None
+    if music_queue.empty():
+        print("queue is empty")
+    # else:
+    #     nexturl = music_queue.get()
+    #     print("Next item: {}".format(nexturl))
+    vc = ctx.voice_client
+    # if vc is None:
+    #     vc = await ctx.author.voice.channel.connect()
+    while not music_queue.empty():
+        # print("state of vc.is_playing() is {}".format(vc.is_playing()))
+        # if not vc.is_playing():
+        if not vc.is_playing():
+            nexturl = music_queue.get()
+            print("Next item: {}".format(nexturl[0]))
+            # vc.stop()
+            vc.play(discord.FFmpegPCMAudio(source=nexturl[1], executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+                                           before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
+            await ctx.send('**Now playing:** {}'.format(nexturl[0]))
+    
 @bot.command(name='play', help='play audio from a youtube link')
 async def play(ctx, url = None):
     
@@ -26,17 +48,23 @@ async def play(ctx, url = None):
 
         if vc is None:
             vc = await voice_channel.channel.connect()
-        vc.stop()
-        try:
-            vc.play(discord.FFmpegPCMAudio(source=playurl, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-                                           before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
-            await ctx.send('**Now playing:** {}'.format(url))
-            # Sleep while audio is playing.
+        # vc.stop()
+        # try:
+        #     vc.play(discord.FFmpegPCMAudio(source=playurl, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+        #                                    before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
+        #     await ctx.send('**Now playing:** {}'.format(url))
+        #     # Sleep while audio is playing.
 
-            # await vc.disconnect()
-        except Exception:
-            await vc.disconnect()
-            logging.warning('Failed vc.play function')
+        #     # await vc.disconnect()
+        # except Exception:
+        #     await vc.disconnect()
+        #     logging.warning('Failed to play song')
+        
+        if music_queue.empty():
+            music_queue.put((url,playurl))
+            await playQueue(ctx)
+        else:
+            music_queue.put((url,playurl))
         
     else:
         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")

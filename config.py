@@ -2,13 +2,14 @@ import os
 import random as rand
 import time
 import logging
+import queue
 
 import discord 
 from discord.ext import commands
 from dotenv import load_dotenv
 
 
-logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+logging.basicConfig(filename='debug.log', level=logging.WARNING)
 
 load_dotenv()
 

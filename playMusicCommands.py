@@ -8,8 +8,8 @@ pafy.set_api_key(yt_key)
 
 # https://stackoverflow.com/a/66116633 for the
 # audio streaming clarification
-music_queue = queue.Queue(50)
-async def playQueue(ctx):
+music_queue = multiprocessing.Queue(50)
+def playQueue(ctx, error=Exception):
     nexturl = None
     if music_queue.empty():
         print("queue is empty")
@@ -28,7 +28,7 @@ async def playQueue(ctx):
             # vc.stop()
             vc.play(discord.FFmpegPCMAudio(source=nexturl[1], executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
                                            before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
-            await ctx.send('**Now playing:** {}'.format(nexturl[0]))
+            # await ctx.send('**Now playing:** {}'.format(nexturl[0]))
     
 @bot.command(name='play', help='play audio from a youtube link')
 async def play(ctx, url = None):
@@ -62,9 +62,13 @@ async def play(ctx, url = None):
         
         if music_queue.empty():
             music_queue.put((url,playurl))
-            await playQueue(ctx)
+            await ctx.send('**Now playing:** {}'.format(url))
+            playQueue(ctx)
         else:
             music_queue.put((url,playurl))
+            await ctx.send("Link: {} added to queue, position#{}".format(url,music_queue.qsize()))
+        
+            
         
     else:
         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
@@ -135,29 +139,3 @@ async def leave(ctx):
     await ctx.voice_client.disconnect()
     await ctx.message.delete()
     
-    
-# async def pause(ctx):
-#     print('Attempting to play linked music')
-#     # Gets voice channel of message author
-
-#     print (str(ctx.author) + " played used a command")
-#     voice_channel = ctx.author.voice
-
-#     if voice_channel != None:
-#         vc = ctx.voice_client
-#         if vc.is_playing():
-#             try:
-#                 vc.pause()
-#             except Exception:
-#                 await vc.disconnect()
-#                 logging.warning('Failed vc.pause function')
-#                 print('Failed vc.pause function')
-#         else:
-#             sent_message = await ctx.send("Can't do that yet")
-#             await sent_message.delete(delay=5)
-        
-#     else:
-#         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
-#         await sent_message.delete(delay=5)
-#     # Delete command after the audio is done playing.
-#     # await ctx.message.delete()

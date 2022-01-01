@@ -2,7 +2,9 @@ import os
 import random as rand
 import time
 import logging
-import queue
+# import queue
+import multiprocessing
+import asyncio
 
 import discord 
 from discord.ext import commands

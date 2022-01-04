@@ -6,29 +6,21 @@ from config import *
 
 pafy.set_api_key(yt_key)
 
-# https://stackoverflow.com/a/66116633 for the
-# audio streaming clarification
-music_queue = multiprocessing.Queue(50)
-def playQueue(ctx, error=Exception):
-    nexturl = None
+# https://stackoverflow.com/a/66116633 for the audio streaming options
+music_queue = queue.Queue(50)
+
+def playQueue(error=None):
+    if error is not None:
+        print(error)
     if music_queue.empty():
-        print("queue is empty")
-    # else:
-    #     nexturl = music_queue.get()
-    #     print("Next item: {}".format(nexturl))
-    vc = ctx.voice_client
-    # if vc is None:
-    #     vc = await ctx.author.voice.channel.connect()
-    while not music_queue.empty():
-        # print("state of vc.is_playing() is {}".format(vc.is_playing()))
-        # if not vc.is_playing():
-        if not vc.is_playing():
-            nexturl = music_queue.get()
-            print("Next item: {}".format(nexturl[0]))
-            # vc.stop()
-            vc.play(discord.FFmpegPCMAudio(source=nexturl[1], executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-                                           before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
-            # await ctx.send('**Now playing:** {}'.format(nexturl[0]))
+        return
+    nextItem = music_queue.get()
+    nexturl = nextItem[1]
+    vc = nextItem[2]
+    print("Next item: {}".format(nextItem[0]))
+    vc.play(discord.FFmpegPCMAudio(source=nextItem[1], executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+                                           before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'), after=playQueue)        
+
     
 @bot.command(name='play', help='play audio from a youtube link')
 async def play(ctx, url = None):
@@ -41,6 +33,10 @@ async def play(ctx, url = None):
     print('Attempting to play linked music')
     # Gets voice channel of message author
 
+    if url is None:
+        no_url_message = await ctx.send("There is no URL")
+        await sent_message.delete(delay=3)
+        return
     print (str(ctx.author) + " played used a command")
     voice_channel = ctx.author.voice
     vc = ctx.voice_client
@@ -48,27 +44,16 @@ async def play(ctx, url = None):
 
         if vc is None:
             vc = await voice_channel.channel.connect()
-        # vc.stop()
-        # try:
-        #     vc.play(discord.FFmpegPCMAudio(source=playurl, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-        #                                    before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
-        #     await ctx.send('**Now playing:** {}'.format(url))
-        #     # Sleep while audio is playing.
-
-        #     # await vc.disconnect()
-        # except Exception:
-        #     await vc.disconnect()
-        #     logging.warning('Failed to play song')
+        print(music_queue.empty())
         
-        if music_queue.empty():
-            music_queue.put((url,playurl))
+        if vc.is_playing():
+            music_queue.put((url, playurl, vc))
+            await ctx.send("Link: {} added to queue, position#{}".format(url,music_queue.qsize()))
+
+        else:
+            music_queue.put((url, playurl, vc))
             await ctx.send('**Now playing:** {}'.format(url))
             playQueue(ctx)
-        else:
-            music_queue.put((url,playurl))
-            await ctx.send("Link: {} added to queue, position#{}".format(url,music_queue.qsize()))
-        
-            
         
     else:
         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")

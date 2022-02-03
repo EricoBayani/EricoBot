@@ -7,7 +7,7 @@ import queue
 import asyncio
 
 import discord 
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
 
@@ -29,5 +29,7 @@ local_path = "C:\\Programming_Stuff\\Python Programs\\EricoBot\\resources\\"
 
 yt_key = os.getenv('YT_KEY')
 
-bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower], case_insensitive=True)
+bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower, '!e '], case_insensitive=True)
+
+voice_timeout = 10.0
 

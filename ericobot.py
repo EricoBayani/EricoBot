@@ -9,15 +9,17 @@
 from config import *
 from audioClipCommands import *
 from askCommands import *
-from playMusicCommands import *
+from playMusicCommands import LinkPlayer
 
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
 def main():
+    bot.add_cog(LinkPlayer(bot))
     bot.run(TOKEN)
     print("Bot is online")    
     
 if __name__ == '__main__':
     main()
+

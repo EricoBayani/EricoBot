@@ -135,3 +135,13 @@ dmypy.json
 *.bat
 # visual studio things
 .vs/
+
+# misc binary files
+.exe
+.mp3
+.mp4
+.ogg
+
+# misc directories
+/Misc-DO-NOT-COMMIT
+/__pycache__/

@@ -23,9 +23,9 @@ async def play_audio(ctx, source_file):
         vc.play(discord.FFmpegPCMAudio(source=source_file, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe'))
         
         # # Sleep while audio is playing.
-        # while vc.is_playing():
-        #     time.sleep(.1)
-        # await vc.disconnect()
+        while vc.is_playing():
+            time.sleep(.1)
+        await vc.disconnect()
         
     else:
         sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")

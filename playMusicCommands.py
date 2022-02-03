@@ -101,7 +101,8 @@ class LinkPlayer(commands.Cog):
             else:
                 self.music_queue.put((url, playurl))
                 await ctx.send('**Now playing:** {}'.format(url))
-                await self.playQueue.start()
+                if not self.playQueue.is_running():
+                    await self.playQueue.start()
 
         else:
             sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")

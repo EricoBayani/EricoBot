@@ -29,7 +29,7 @@ local_path = "C:\\Programming_Stuff\\Python Programs\\EricoBot\\resources\\"
 
 yt_key = os.getenv('YT_KEY')
 
-bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower, '!e '], case_insensitive=True)
+voice_timeout = 10.0 # seconds
+m_queue_size = 50
 
-voice_timeout = 10.0
-
+# bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower, '!e '], case_insensitive=True)

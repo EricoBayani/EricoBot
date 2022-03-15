@@ -7,6 +7,35 @@ from config import *
 pafy.set_api_key(yt_key)
 
 
+# Options and youtube_dl construct shamelessly stolen from
+# Rapptz basic_voice example
+# https://github.com/Rapptz/discord.py/blob/master/examples/basic_voice.py
+# Suppress noise about console usage from errors
+youtube_dl.utils.bug_reports_message = lambda: ''
+
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': False, # turned false to try and see how ytdl works
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+
+
 class LinkPlayer(commands.Cog):
     # https://stackoverflow.com/a/66116633 for the audio streaming options
 
@@ -20,7 +49,7 @@ class LinkPlayer(commands.Cog):
 
     @tasks.loop(seconds=1.0, count=None)
     async def playQueue(self):
-        print(str(self.playQueue.current_loop))
+        # print(str(self.playQueue.current_loop))
         nextItem = None
         if not self.music_queue.empty():
             if not self.vc.is_playing():

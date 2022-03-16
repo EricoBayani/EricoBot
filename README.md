@@ -2,7 +2,7 @@
 A personal Discord Bot for my friends' servers.
 
 ## How to Run
-Run the command in `python3 ericobot.py`.
+Run the command  `python3 ericobot.py`
 
 ## Features
 - Play audio from Youtube Links or local audio files made as inside jokes

@@ -72,17 +72,20 @@ class LinkPlayer(commands.Cog):
                     
                          
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
-    async def play(self, ctx, query = None):
+    async def play(self, ctx, *query):
 
         print('Attempting to play linked music')
 
-
+        print(query)
         if query is None:
             no_url_message = await ctx.send("There is no query")
             print('there was no query')
             await no_url_message.delete(delay=3)
             return
 
+        query = ' '.join(query)
+        print(query)
+        
         print (str(ctx.author) + " played used a command")
 
         info = ytdl.extract_info(query, download=False)

@@ -23,7 +23,7 @@ ytdl_format_options = {
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
-    'quiet': False, # turned false to try and see how ytdl works
+    'quiet': True, # turned false to try and see how ytdl works
     'no_warnings': True,
     'default_search': 'ytsearch',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
@@ -84,7 +84,6 @@ class LinkPlayer(commands.Cog):
             return
 
         query = ' '.join(query)
-        print(query)
         
         print (str(ctx.author) + " played used a command")
 
@@ -92,7 +91,6 @@ class LinkPlayer(commands.Cog):
         if 'entries' in info:
             info = info['entries'][0]
 
-        print(info['id'])
         url = info['id']
 
         
@@ -174,7 +172,7 @@ class LinkPlayer(commands.Cog):
         print("stopping")
         # vc = ctx.voice_client
         await self.playerCommand(ctx, self.vc.stop, "Can't stop audio that is not connected to channel")
-        self.playQueue.cancel()
+        # self.playQueue.cancel()
         if not self.music_queue.empty():
             self.music_queue = queue.queue(m_queue_size)
         # await ctx.message.delete()

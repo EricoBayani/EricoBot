@@ -2,6 +2,7 @@
 import pafy
 import vlc
 import youtube_dl
+import re
 from config import *
 
 pafy.set_api_key(yt_key)
@@ -24,7 +25,7 @@ ytdl_format_options = {
     'logtostderr': False,
     'quiet': False, # turned false to try and see how ytdl works
     'no_warnings': True,
-    'default_search': 'auto',
+    'default_search': 'ytsearch',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
@@ -70,22 +71,33 @@ class LinkPlayer(commands.Cog):
                         before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
                     
                          
-    @commands.command(name='play', help='play audio from a youtube link')
-    async def play(self, ctx, url = None):
+    @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
+    async def play(self, ctx, query = None):
 
+        print('Attempting to play linked music')
+
+
+        if query is None:
+            no_url_message = await ctx.send("There is no query")
+            print('there was no query')
+            await no_url_message.delete(delay=3)
+            return
+
+        print (str(ctx.author) + " played used a command")
+
+        info = ytdl.extract_info(query, download=False)
+        if 'entries' in info:
+            info = info['entries'][0]
+
+        print(info['id'])
+        url = info['id']
+
+        
         video = pafy.new(url)
 
         audiostream = video.getbestaudio()
         playurl = audiostream.url
-
-        print('Attempting to play linked music')
-
-        if url is None:
-            no_url_message = await ctx.send("There is no URL")
-            await sent_message.delete(delay=3)
-            return
-
-        print (str(ctx.author) + " played used a command")
+        
         voice = ctx.author.voice
         # self.vc = ctx.voice_client
         if voice != None:

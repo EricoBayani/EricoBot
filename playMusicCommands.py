@@ -4,7 +4,7 @@ import vlc
 import youtube_dl
 import re
 from config import *
-
+import queue
 pafy.set_api_key(yt_key)
 
 
@@ -30,7 +30,8 @@ ytdl_format_options = {
 }
 
 ffmpeg_options = {
-    'options': '-vn'
+    'options': '-vn',
+    'before_options':'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
@@ -53,31 +54,53 @@ class LinkPlayer(commands.Cog):
         # print(str(self.playQueue.current_loop))
         nextItem = None
         if not self.music_queue.empty():
+            # print('Queue is not empty')
             if not self.vc.is_playing():
+                # print('Grabbing a new song')
                 nextItem = self.music_queue.get()
         if nextItem is None:
+            # print('no new item yet')
             if self.vc is not None:
+                # print('voice client still connected')
                 if not self.vc.is_playing():
+                    # print('voice client still not playing audio')
                     self.music_queue_time += 1.0
                     if self.music_queue_time == self.music_queue_timeout:
+                        # print('timeout reached, disconnecting from voice client and stopping loop')
                         await self.vc.disconnect()
                         self.vc = None
                         self.playQueue.stop()
+                    
         else:
+            # print('resetting timeout')
             self.music_queue_time = 0.0
             if self.vc is not None:
-                self.vc.play(discord.FFmpegPCMAudio(source=nextItem[1],
+                # print('playing')
+                audio = discord.FFmpegPCMAudio(source=nextItem[1],
                         executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-                        before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn'))
+                                               before_options=ffmpeg_options['before_options'],
+                                               options=ffmpeg_options['options'])
+                self.vc.play(audio, after=lambda e: print(f'Player error: {e}') if e else None)
+
                     
-                         
+
+    @playQueue.before_loop
+    async def before_playQueue(self):
+        print('Waiting')
+        if self.music_queue.empty():
+            print('Queue was empty before playQueue loop began')
+            playQueue.cancel()
+        await self.bot.wait_until_ready()
+        print('Stopped waiting')
+
+        
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
     async def play(self, ctx, *query):
 
         print('Attempting to play linked music')
 
         print(query)
-        if query is None:
+        if not query:
             no_url_message = await ctx.send("There is no query")
             print('there was no query')
             await no_url_message.delete(delay=3)
@@ -92,7 +115,9 @@ class LinkPlayer(commands.Cog):
             info = info['entries'][0]
 
         url = info['id']
-
+        # print(info.keys())
+        # print("URL from info is:" + str(info['url']))
+        # print("webpage_url_ from info is:" + str(info['webpage_url']))
         
         video = pafy.new(url)
 
@@ -104,11 +129,11 @@ class LinkPlayer(commands.Cog):
         if voice != None:
 
             if self.vc is None:
-                self.vc = await voice.channel.connect(timeout=voice_timeout)
+                self.vc = await voice.channel.connect()
             # print(self.music_queue.empty())
 
             if self.vc.is_playing():
-                self.music_queue.put((url, playurl))
+                self.music_queue.put((info['webpage_url'], playurl))
                 await ctx.send("Link: {} added to queue, position#{}".format(video.title,self.music_queue.qsize()))
 
             else:

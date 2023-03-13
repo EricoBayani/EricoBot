@@ -18,12 +18,12 @@ youtube_dl.utils.bug_reports_message = lambda: ''
 ytdl_format_options = {
     'format': 'bestaudio/best',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
+    'restrictfilenames': False,
     'noplaylist': True,
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
-    'quiet': True, # turned false to try and see how ytdl works
+    'quiet': False, # turned false to try and see how ytdl works
     'no_warnings': True,
     'default_search': 'ytsearch',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
@@ -114,15 +114,32 @@ class LinkPlayer(commands.Cog):
         if 'entries' in info:
             info = info['entries'][0]
 
-        url = info['id']
+
+        playurl = ''
+        maxbitrate = -1;
+        # for i in info:
+        #     print(i)
+        for i in info['formats']:
+            if i['vcodec'] == 'none':
+                if maxbitrate < i['filesize']:
+                    playurl = i['url']
+                    maxbitrate = i['filesize']
+        print(info['url'])
+        print(info['webpage_url'])
+                
+        
+
+        url = info['webpage_url']
+
+        video_title = info['title']
         # print(info.keys())
         # print("URL from info is:" + str(info['url']))
         # print("webpage_url_ from info is:" + str(info['webpage_url']))
         
-        video = pafy.new(url)
+        # video = pafy.new(url)
 
-        audiostream = video.getbestaudio()
-        playurl = audiostream.url
+        # audiostream = video.getbestaudio()
+        
         
         voice = ctx.author.voice
         # self.vc = ctx.voice_client
@@ -134,11 +151,11 @@ class LinkPlayer(commands.Cog):
 
             if self.vc.is_playing():
                 self.music_queue.put((info['webpage_url'], playurl))
-                await ctx.send("Link: {} added to queue, position#{}".format(video.title,self.music_queue.qsize()))
+                await ctx.send("Link: {} added to queue, position#{}".format(video_title,self.music_queue.qsize()))
 
             else:
                 self.music_queue.put((url, playurl))
-                await ctx.send('**Now playing:** {}'.format(video.title))
+                await ctx.send('**Now playing:** {}'.format(video_title))
                 if not self.playQueue.is_running():
                     await self.playQueue.start()
 

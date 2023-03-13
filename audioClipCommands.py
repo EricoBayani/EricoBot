@@ -34,7 +34,7 @@ class ClipPlayer(commands.Cog):
             # # Sleep while audio is playing.
             while vc.is_playing():
                 time.sleep(.1)
-            # await vc.disconnect()
+            await vc.disconnect()
 
         else:
             sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")

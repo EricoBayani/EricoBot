@@ -5,6 +5,8 @@ import youtube_dl
 import re
 from config import *
 import queue
+
+import re
 pafy.set_api_key(yt_key)
 
 
@@ -25,7 +27,7 @@ ytdl_format_options = {
     'logtostderr': False,
     'quiet': False, # turned false to try and see how ytdl works
     'no_warnings': True,
-    'default_search': 'ytsearch',
+    'default_search': 'ytsearch3',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
@@ -93,12 +95,22 @@ class LinkPlayer(commands.Cog):
         await self.bot.wait_until_ready()
         print('Stopped waiting')
 
-        
+    # # helper function to determine whether query tuple is a url or not
+    # def is_url(self, url):
+    #     if len(url) != 1:
+    #         return False
+    #     url_re = re.compile("*[.]*")
+    #     is_url = url_re.match(url):
+    #     if is_url:
+    #         return True
+    #     return False
+    
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
     async def play(self, ctx, *query):
 
         print('Attempting to play linked music')
-
+        await ctx.typing()
+        
         print(query)
         if not query:
             no_url_message = await ctx.send("There is no query")
@@ -107,12 +119,67 @@ class LinkPlayer(commands.Cog):
             return
 
         query = ' '.join(query)
-        
+        # At some point here, I want to make find out whether the query is
+        # a URL or a search query. If it's a URL, we can just skip to playing
+        # the link. Otherwise, we'd need to present the channel with options
+        # to play. 
         print (str(ctx.author) + " played used a command")
 
+        info = None
+
+        # if not is_url(query):
+            
+        
         info = ytdl.extract_info(query, download=False)
         if 'entries' in info:
-            info = info['entries'][0]
+            print("There were multiple entries to choose")
+            # for i in info['entries']:
+            #     # print(i)
+            #     print(i["webpage_url"])
+            #     print(i["title"])
+            
+            # info = info['entries'][0]
+
+            # options = [
+            #     discord.SelectOption(label=info['entries'][0]['title']),
+            #     discord.SelectOption(label=info['entries'][1]['title']),
+            #     discord.SelectOption(label=info['entries'][2]['title'])
+            #     ]
+            # selection = discord.ui.Select(min_values=1, max_values=1, options=options)
+            # view = discord.ui.View(timeout = 15.0)
+            # view.add_item(selection)
+
+            chosen_video = await ctx.send("Pick the video you want to play by reacting to this message:")
+            await chosen_video.add_reaction("\N{grinning face}")
+            await chosen_video.add_reaction("\N{grinning face with smiling eyes}")
+            await chosen_video.add_reaction("\N{winking face}")
+
+            await ctx.send("\N{grinning face} : {}".format(info["entries"][0]["title"]))
+            await ctx.send("\N{grinning face with smiling eyes} : {}".format(info["entries"][1]["title"]))
+            await ctx.send("\N{winking face} : {}".format(info["entries"][2]["title"]))
+            
+            new_video = None
+            def check(reaction, user):
+
+                
+                return user == ctx.author and str(reaction.emoji) is not None
+            
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=15.0, check=check)
+            except asyncio.TimeoutError:
+                await ctx.send("You didn't pick in time, not gonna do anything")
+                return
+            else:
+                if str(reaction.emoji) == "\N{grinning face}":
+                    new_video = info["entries"][0]["webpage_url"]
+                    info = info["entries"][0]
+                if str(reaction.emoji) == "\N{grinning face with smiling eyes}":
+                    new_video = info["entries"][1]["webpage_url"]
+                    info = info["entries"][1]
+                if str(reaction.emoji) == "\N{winking face}":
+                    new_video = info["entries"][2]["webpage_url"]
+                    info = info["entries"][2]                
+                await ctx.send("I will now play: {}".format(new_video))
 
 
         playurl = ''
@@ -132,15 +199,7 @@ class LinkPlayer(commands.Cog):
         url = info['webpage_url']
 
         video_title = info['title']
-        # print(info.keys())
-        # print("URL from info is:" + str(info['url']))
-        # print("webpage_url_ from info is:" + str(info['webpage_url']))
-        
-        # video = pafy.new(url)
 
-        # audiostream = video.getbestaudio()
-        
-        
         voice = ctx.author.voice
         # self.vc = ctx.voice_client
         if voice != None:
@@ -163,8 +222,8 @@ class LinkPlayer(commands.Cog):
             sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
             await sent_message.delete(delay=5)        
 
-        # await ctx.message.delete()
-
+        # # await ctx.message.delete()
+        return
     # playerCommand is a template function for controlling the bot who's currently playing music
     # Input:
     # ctx: discord context

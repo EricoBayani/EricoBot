@@ -84,8 +84,6 @@ class LinkPlayer(commands.Cog):
                                                options=ffmpeg_options['options'])
                 self.vc.play(audio, after=lambda e: print(f'Player error: {e}') if e else None)
 
-                    
-
     @playQueue.before_loop
     async def before_playQueue(self):
         print('Waiting')
@@ -94,16 +92,6 @@ class LinkPlayer(commands.Cog):
             playQueue.cancel()
         await self.bot.wait_until_ready()
         print('Stopped waiting')
-
-    # # helper function to determine whether query tuple is a url or not
-    # def is_url(self, url):
-    #     if len(url) != 1:
-    #         return False
-    #     url_re = re.compile("*[.]*")
-    #     is_url = url_re.match(url):
-    #     if is_url:
-    #         return True
-    #     return False
     
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
     async def play(self, ctx, *query):
@@ -124,59 +112,41 @@ class LinkPlayer(commands.Cog):
         # the link. Otherwise, we'd need to present the channel with options
         # to play. 
         print (str(ctx.author) + " played used a command")
-
-        info = None
-
-        # if not is_url(query):
-            
         
         info = ytdl.extract_info(query, download=False)
         if 'entries' in info:
             print("There were multiple entries to choose")
-            # for i in info['entries']:
-            #     # print(i)
-            #     print(i["webpage_url"])
-            #     print(i["title"])
+
+            emoji_string_one = "1\uFE0F\u20E3"
+            emoji_string_two =  "2\uFE0F\u20E3"
+            emoji_string_three = "3\uFE0F\u20E3"
             
-            # info = info['entries'][0]
-
-            # options = [
-            #     discord.SelectOption(label=info['entries'][0]['title']),
-            #     discord.SelectOption(label=info['entries'][1]['title']),
-            #     discord.SelectOption(label=info['entries'][2]['title'])
-            #     ]
-            # selection = discord.ui.Select(min_values=1, max_values=1, options=options)
-            # view = discord.ui.View(timeout = 15.0)
-            # view.add_item(selection)
-
             chosen_video = await ctx.send("Pick the video you want to play by reacting to this message:")
-            await chosen_video.add_reaction("\N{grinning face}")
-            await chosen_video.add_reaction("\N{grinning face with smiling eyes}")
-            await chosen_video.add_reaction("\N{winking face}")
+            
+            await chosen_video.add_reaction(emoji_string_one)
+            await chosen_video.add_reaction(emoji_string_two)
+            await chosen_video.add_reaction(emoji_string_three)
 
-            await ctx.send("\N{grinning face} : {}".format(info["entries"][0]["title"]))
-            await ctx.send("\N{grinning face with smiling eyes} : {}".format(info["entries"][1]["title"]))
-            await ctx.send("\N{winking face} : {}".format(info["entries"][2]["title"]))
+            await ctx.send("{} : {}".format(emoji_string_one, info["entries"][0]["title"]))
+            await ctx.send("{} : {}".format(emoji_string_two, info["entries"][1]["title"]))
+            await ctx.send("{} : {}".format(emoji_string_three, info["entries"][2]["title"]))
             
             new_video = None
             def check(reaction, user):
-
-                
-                return user == ctx.author and str(reaction.emoji) is not None
-            
+                return user == ctx.author and str(reaction.emoji) is not None            
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=15.0, check=check)
             except asyncio.TimeoutError:
                 await ctx.send("You didn't pick in time, not gonna do anything")
                 return
             else:
-                if str(reaction.emoji) == "\N{grinning face}":
+                if str(reaction.emoji) == emoji_string_one:
                     new_video = info["entries"][0]["webpage_url"]
                     info = info["entries"][0]
-                if str(reaction.emoji) == "\N{grinning face with smiling eyes}":
+                if str(reaction.emoji) == emoji_string_two:
                     new_video = info["entries"][1]["webpage_url"]
                     info = info["entries"][1]
-                if str(reaction.emoji) == "\N{winking face}":
+                if str(reaction.emoji) == emoji_string_three:
                     new_video = info["entries"][2]["webpage_url"]
                     info = info["entries"][2]                
                 await ctx.send("I will now play: {}".format(new_video))
@@ -222,7 +192,6 @@ class LinkPlayer(commands.Cog):
             sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
             await sent_message.delete(delay=5)        
 
-        # # await ctx.message.delete()
         return
     # playerCommand is a template function for controlling the bot who's currently playing music
     # Input:

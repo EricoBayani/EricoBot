@@ -7,6 +7,7 @@ import sys
 
 #local modules
 from config import *
+from discord import app_commands
 from audioClipCommands import ClipPlayer
 from askCommands import AskWiki
 from playMusicCommands import LinkPlayer
@@ -14,6 +15,7 @@ from playMusicCommands import LinkPlayer
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower, '!e '], case_insensitive=True, intents = intents)
+
 
 
 @bot.event

@@ -8,11 +8,11 @@ import asyncio
 
 import discord 
 from discord.ext import commands, tasks
+from discord.utils import *
 from dotenv import load_dotenv
 
 
-logging.basicConfig(filename='debug.log', level=logging.WARNING)
-
+logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')

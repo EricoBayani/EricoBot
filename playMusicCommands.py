@@ -1,13 +1,12 @@
 # playMusicCommands.py
-import pafy
-import vlc
+# import vlc
 import youtube_dl
 import re
 from config import *
 import queue
+import os.path
 
 import re
-pafy.set_api_key(yt_key)
 
 
 # Options and youtube_dl construct shamelessly stolen from
@@ -32,8 +31,8 @@ ytdl_format_options = {
 }
 
 ffmpeg_options = {
-    'options': '-vn',
-    'before_options':'-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+    'options': '-vn -filter:a',
+    'before_options':'-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 7'
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
@@ -51,38 +50,41 @@ class LinkPlayer(commands.Cog):
         self.vc = None
 
 
-    @tasks.loop(seconds=1.0, count=None)
+    @tasks.loop(seconds=2.0, count=None)
     async def playQueue(self):
-        # print(str(self.playQueue.current_loop))
+        print(str(self.playQueue.current_loop))
         nextItem = None
         if not self.music_queue.empty():
-            # print('Queue is not empty')
+            print('Queue is not empty')
             if not self.vc.is_playing():
-                # print('Grabbing a new song')
+                print('Grabbing a new song')
                 nextItem = self.music_queue.get()
         if nextItem is None:
-            # print('no new item yet')
+            print('no new item yet')
             if self.vc is not None:
-                # print('voice client still connected')
+                print('voice client still connected')
                 if not self.vc.is_playing():
-                    # print('voice client still not playing audio')
+                    print('voice client still not playing audio')
                     self.music_queue_time += 1.0
                     if self.music_queue_time == self.music_queue_timeout:
-                        # print('timeout reached, disconnecting from voice client and stopping loop')
+                        print('timeout reached, disconnecting from voice client and stopping loop')
                         await self.vc.disconnect()
                         self.vc = None
                         self.playQueue.stop()
                     
         else:
-            # print('resetting timeout')
+            print('resetting timeout')
             self.music_queue_time = 0.0
             if self.vc is not None:
-                # print('playing')
+                ffmpeg_err = open("ffmpeg_log.txt", "w")
+                print('playing')
                 audio = discord.FFmpegPCMAudio(source=nextItem[1],
                         executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
-                                               before_options=ffmpeg_options['before_options'],
-                                               options=ffmpeg_options['options'])
-                self.vc.play(audio, after=lambda e: print(f'Player error: {e}') if e else None)
+                                            stderr=ffmpeg_err,
+                                            before_options=ffmpeg_options['before_options'],
+                                            options=ffmpeg_options['options'])
+                self.vc.play(audio, after=lambda e: print(f'Player error: {e}') if e else None, fec=False, signal_type='music')
+                ffmpeg_err.close()
 
     @playQueue.before_loop
     async def before_playQueue(self):
@@ -157,10 +159,10 @@ class LinkPlayer(commands.Cog):
         # for i in info:
         #     print(i)
         for i in info['formats']:
-            if i['vcodec'] == 'none':
-                if maxbitrate < i['filesize']:
-                    playurl = i['url']
-                    maxbitrate = i['filesize']
+            if i['format_id'] == '18':
+                playurl = i['url']
+                maxbitrate = i['filesize']
+                break;
         print(info['url'])
         print(info['webpage_url'])
                 

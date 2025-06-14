@@ -145,3 +145,5 @@ dmypy.json
 # misc directories
 /Misc-DO-NOT-COMMIT
 /__pycache__/
+uv.lock
+/.vscode

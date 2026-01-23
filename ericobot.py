@@ -4,7 +4,7 @@
 # from datetime import datetime
 # from json_writer import JSON_Writer
 import sys
-
+import os
 #local modules
 from config import *
 from discord import app_commands
@@ -21,16 +21,18 @@ bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_pr
 @bot.event
 async def on_ready():
     
-    await bot.add_cog(LinkPlayer(bot))
+    # await bot.add_cog(LinkPlayer(bot))
     await bot.add_cog(ClipPlayer(bot))
-    await bot.add_cog(AskWiki(bot))
+    # await bot.add_cog(AskWiki(bot))
+    assert bot.user is not None
     print('Current Python version is ', sys.version)
-    print(f'{bot.user.name} has connected to Discord!')
+    print(f'{bot.user} (ID: {bot.user.id}) has connected to Discord!')
+    print(os.getcwd())
     
+def main():
+    bot.run(TOKEN)
+    print("Bot is online")
 
-bot.run(TOKEN)
-print("Bot is online")    
-    
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
 

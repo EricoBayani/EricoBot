@@ -2,24 +2,24 @@
 
 from config import *
 from discord.ext import commands
-# load_dotenv()
 
 class ClipPlayer(commands.Cog):    
-    # jokes dictionary for easy random selection    
-    jokes_dict = {}
-    jokes_dict["brick_sucks"] = local_path + "brick-sucks.mp3"
 
     # a generic command that will play any sound file into
     # voice when passed a file path to the sound.
 
     def __init__(self, bot):
         self.bot = bot
-    
+        # jokes dictionary for easy random selection    
+        self.jokes_dict = {}
+        self.jokes_dict["brick_sucks"] = local_path + "brick-sucks.mp3"
+
+
     async def play_audio(self, ctx, source_file):
         print('Attempting to play sound')
         # Gets voice channel of message author
 
-        print (str(ctx.author) + " played used a command")
+        print (str(ctx.author) + " used a command")
         voice_channel = ctx.author.voice
 
         # print(type(voice_channel))
@@ -27,13 +27,18 @@ class ClipPlayer(commands.Cog):
         if voice_channel != None:
 
             if vc is None:
-                vc = await voice_channel.channel.connect()
+                try:
+                    vc = await voice_channel.channel.connect()
+                except Exception as e:
+                    print(f'Exception during voice channel connect: {e}')
+                    return
             vc.stop()
-            vc.play(discord.FFmpegPCMAudio(source=source_file, executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe'))
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source=source_file, options='-vn'))
+            vc.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
             # # Sleep while audio is playing.
             while vc.is_playing():
-                time.sleep(.1)
+                await asyncio.sleep(1)
             await vc.disconnect()
 
         else:
@@ -50,7 +55,7 @@ class ClipPlayer(commands.Cog):
     @commands.command(name='joke', help='Play a funny prerecorded haha joke for the whole family!')
     async def make_joke(self, ctx):
 
-        joke_choice = rand.choice(list(jokes_dict.items()))
+        joke_choice = rand.choice(list(self.jokes_dict.items()))
 
         await self.play_audio(ctx, joke_choice[1])
     @commands.command(name='scarra_laugh', help='Play the laugh of the venerable Scarra!')    

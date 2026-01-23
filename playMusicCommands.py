@@ -79,7 +79,6 @@ class LinkPlayer(commands.Cog):
                 ffmpeg_err = open("ffmpeg_log.txt", "w")
                 print('playing')
                 audio = discord.FFmpegPCMAudio(source=nextItem[1],
-                        executable='C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
                                             stderr=ffmpeg_err,
                                             before_options=ffmpeg_options['before_options'],
                                             options=ffmpeg_options['options'])

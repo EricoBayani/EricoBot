@@ -2,7 +2,7 @@
 import wikipediaapi as wiki
 
 #local modules
-from config import *
+from Config import *
 
 class AskWiki(commands.Cog):
 

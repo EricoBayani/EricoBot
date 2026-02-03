@@ -1,8 +1,10 @@
 # playMusicCommands.py
 # import vlc
 import youtube_dl
+import yt_dlp
 import re
-from config import *
+from Config import *
+from AudioPlayer import TaggedAudioSource
 import queue
 import os.path
 
@@ -42,57 +44,16 @@ ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 class LinkPlayer(commands.Cog):
     # https://stackoverflow.com/a/66116633 for the audio streaming options
 
-    def __init__(self, bot):
+    def __init__(self, bot, audioplayer = None):
         self.bot = bot
         self.music_queue = queue.Queue(m_queue_size)
         self.music_queue_timeout = voice_timeout
         self.music_queue_time = 0.0
         self.vc = None
+        # TODO: should it be a fatal exception if audioplayer is None? It shouldn't happen, 
+        # but if it does wouldn't it be good if I fixed the global audio player? 
+        self.audioplayer = audioplayer
 
-
-    @tasks.loop(seconds=2.0, count=None)
-    async def playQueue(self):
-        print(str(self.playQueue.current_loop))
-        nextItem = None
-        if not self.music_queue.empty():
-            print('Queue is not empty')
-            if not self.vc.is_playing():
-                print('Grabbing a new song')
-                nextItem = self.music_queue.get()
-        if nextItem is None:
-            print('no new item yet')
-            if self.vc is not None:
-                print('voice client still connected')
-                if not self.vc.is_playing():
-                    print('voice client still not playing audio')
-                    self.music_queue_time += 1.0
-                    if self.music_queue_time == self.music_queue_timeout:
-                        print('timeout reached, disconnecting from voice client and stopping loop')
-                        await self.vc.disconnect()
-                        self.vc = None
-                        self.playQueue.stop()
-                    
-        else:
-            print('resetting timeout')
-            self.music_queue_time = 0.0
-            if self.vc is not None:
-                ffmpeg_err = open("ffmpeg_log.txt", "w")
-                print('playing')
-                audio = discord.FFmpegPCMAudio(source=nextItem[1],
-                                            stderr=ffmpeg_err,
-                                            before_options=ffmpeg_options['before_options'],
-                                            options=ffmpeg_options['options'])
-                self.vc.play(audio, after=lambda e: print(f'Player error: {e}') if e else None, fec=False, signal_type='music')
-                ffmpeg_err.close()
-
-    @playQueue.before_loop
-    async def before_playQueue(self):
-        print('Waiting')
-        if self.music_queue.empty():
-            print('Queue was empty before playQueue loop began')
-            playQueue.cancel()
-        await self.bot.wait_until_ready()
-        print('Stopped waiting')
     
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
     async def play(self, ctx, *query):
@@ -100,6 +61,12 @@ class LinkPlayer(commands.Cog):
         print('Attempting to play linked music')
         await ctx.typing()
         
+        voice = ctx.author.voice
+
+        if voice is None:
+            sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
+            await sent_message.delete(delay=5)     
+
         print(query)
         if not query:
             no_url_message = await ctx.send("There is no query")
@@ -170,28 +137,13 @@ class LinkPlayer(commands.Cog):
         url = info['webpage_url']
 
         video_title = info['title']
-
-        voice = ctx.author.voice
         # self.vc = ctx.voice_client
-        if voice != None:
+        
 
-            if self.vc is None:
-                self.vc = await voice.channel.connect()
-            # print(self.music_queue.empty())
+        if self.vc is None:
+            self.vc = await voice.channel.connect()
 
-            if self.vc.is_playing():
-                self.music_queue.put((info['webpage_url'], playurl))
-                await ctx.send("Link: {} added to queue, position#{}".format(video_title,self.music_queue.qsize()))
-
-            else:
-                self.music_queue.put((url, playurl))
-                await ctx.send('**Now playing:** {}'.format(video_title))
-                if not self.playQueue.is_running():
-                    await self.playQueue.start()
-
-        else:
-            sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
-            await sent_message.delete(delay=5)        
+        await self.audioplayer.place_in_queue(ctx, TaggedAudioSource(playurl, tag=video_title))
 
         return
     # playerCommand is a template function for controlling the bot who's currently playing music

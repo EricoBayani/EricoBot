@@ -11,8 +11,8 @@ from discord.ext import commands, tasks
 from discord.utils import *
 from dotenv import load_dotenv
 
+logger = logging.getLogger('discord')
 
-logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')

@@ -22,7 +22,7 @@ audioplayer = AudioPlayer(bot)
 @bot.event
 async def on_ready():
     # await bot.add_cog(AudioPlayer(bot))
-    # await bot.add_cog(LinkPlayer(bot))
+    await bot.add_cog(LinkPlayer(bot, audioplayer))
     await bot.add_cog(ClipPlayer(bot, audioplayer))
     # await bot.add_cog(AskWiki(bot))
     assert bot.user is not None

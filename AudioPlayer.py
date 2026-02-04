@@ -93,3 +93,73 @@ class AudioPlayer:
             await ctx.send('**Now playing:** {}'.format(source.tag))
             if not self.playQueue.is_running():
                 await self.playQueue.start()
+
+
+    # playerCommand is a template function for controlling the bot who's currently playing music
+    # Input:
+    # ctx: discord context
+    # vc: voice channel object from context
+    # callback: what function to use i.e. vc.pause(), vc.resume()
+    # oppositeState: what to check to avoid contradiction i.e. isPlaying() is opposite state to pause() command
+    # errorString: message about the state and why it can't happen i.e. User tried to pause already paused video
+    async def playerCommand(self, ctx, callback, errorString="Can't do that yet"):
+        logger.debug('messing with player')
+
+        logger.debug(str(ctx.author) + " played used a command")
+        voice_channel = ctx.author.voice
+        channel = None
+
+        if voice_channel != None:
+            self.vc = ctx.voice_client
+
+            try:
+                callback()
+            except Exception:
+                await self.vc.disconnect()
+                logging.error('Failed vc callback function')
+                sent_message = await ctx.send(errorString)
+                await sent_message.delete(delay=5)        
+
+        else:
+            sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
+            await sent_message.delete(delay=5)
+
+
+
+    async def pause(self, ctx):
+        logger.debug("pausing")
+        await self.playerCommand(ctx, self.vc.pause, "Can't pause already paused song")
+        self.playQueue.cancel() 
+
+
+
+    async def stop(self, ctx):
+        logger.debug("stopping")
+
+        await self.playerCommand(ctx, self.vc.stop, "Can't stop audio that is not connected to channel")
+        if not self.music_queue.empty():
+            self.music_queue = queue.Queue(m_queue_size)
+
+
+    async def skip(self, ctx):
+        logger.debug("skipping")
+
+        await self.playerCommand(ctx, self.vc.stop, "Can't stop audio that is not connected to channel")
+        
+
+    async def resume(self, ctx):
+        logger.debug("resuming")
+
+        await self.playerCommand(ctx, self.vc.resume, "Can't resume audio that is not connected to channel")
+        self.playQueue.restart()
+
+
+
+    async def leave(self, ctx):
+        logger.debug("leaving channel")
+
+        await ctx.voice_client.disconnect()
+        self.playQueue.cancel()
+        self.vc = None
+        if not self.music_queue.empty():
+            self.music_queue = queue.Queue(m_queue_size)

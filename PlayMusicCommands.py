@@ -1,7 +1,8 @@
 # playMusicCommands.py
 # import vlc
-import youtube_dl
+# import youtube_dl
 import yt_dlp
+import json
 import re
 from Config import *
 from AudioPlayer import TaggedAudioSource
@@ -15,29 +16,23 @@ import re
 # Rapptz basic_voice example
 # https://github.com/Rapptz/discord.py/blob/master/examples/basic_voice.py
 # Suppress noise about console usage from errors
-youtube_dl.utils.bug_reports_message = lambda: ''
+# youtube_dl.utils.bug_reports_message = lambda: ''
 
 
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': False, # turned false to try and see how ytdl works
-    'no_warnings': True,
-    'default_search': 'ytsearch3',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+ydl_opts = {
+    'format': 'm4a/bestaudio/best',
+    # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+    'postprocessors': [{  # Extract audio using ffmpeg
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'm4a',
+    }],
+    'default_search': 'ytsearch3'
 }
 
 ffmpeg_options = {
     'options': '-vn -filter:a',
     'before_options':'-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 7'
 }
-
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 
 
@@ -58,7 +53,7 @@ class LinkPlayer(commands.Cog):
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
     async def play(self, ctx, *query):
 
-        print('Attempting to play linked music')
+        logger.debug('Attempting to play linked music')
         await ctx.typing()
         
         voice = ctx.author.voice
@@ -67,10 +62,10 @@ class LinkPlayer(commands.Cog):
             sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
             await sent_message.delete(delay=5)     
 
-        print(query)
+        logger.debug(query)
         if not query:
             no_url_message = await ctx.send("There is no query")
-            print('there was no query')
+            logger.debug('there was no query')
             await no_url_message.delete(delay=3)
             return
 
@@ -81,64 +76,65 @@ class LinkPlayer(commands.Cog):
         # to play. 
         print (str(ctx.author) + " played used a command")
         
-        info = ytdl.extract_info(query, download=False)
-        if 'entries' in info:
-            print("There were multiple entries to choose")
 
-            emoji_string_one = "1\uFE0F\u20E3"
-            emoji_string_two =  "2\uFE0F\u20E3"
-            emoji_string_three = "3\uFE0F\u20E3"
-            
-            chosen_video = await ctx.send("Pick the video you want to play by reacting to this message:")
-            
-            await chosen_video.add_reaction(emoji_string_one)
-            await chosen_video.add_reaction(emoji_string_two)
-            await chosen_video.add_reaction(emoji_string_three)
+        with yt_dlp.YoutubeDL(ydl_opts) as ytdl:
+        
+            info = ytdl.extract_info(query, download=False)
 
-            await ctx.send("{} : {}".format(emoji_string_one, info["entries"][0]["title"]))
-            await ctx.send("{} : {}".format(emoji_string_two, info["entries"][1]["title"]))
-            await ctx.send("{} : {}".format(emoji_string_three, info["entries"][2]["title"]))
-            
-            new_video = None
-            def check(reaction, user):
-                return user == ctx.author and str(reaction.emoji) is not None            
-            try:
-                reaction, user = await self.bot.wait_for('reaction_add', timeout=15.0, check=check)
-            except asyncio.TimeoutError:
-                await ctx.send("You didn't pick in time, not gonna do anything")
-                return
-            else:
-                if str(reaction.emoji) == emoji_string_one:
-                    new_video = info["entries"][0]["webpage_url"]
-                    info = info["entries"][0]
-                if str(reaction.emoji) == emoji_string_two:
-                    new_video = info["entries"][1]["webpage_url"]
-                    info = info["entries"][1]
-                if str(reaction.emoji) == emoji_string_three:
-                    new_video = info["entries"][2]["webpage_url"]
-                    info = info["entries"][2]                
-                await ctx.send("I will now play: {}".format(new_video))
+            if 'entries' in info:
+                logger.debug("There were multiple entries to choose")
+
+                emoji_string_one = "1\uFE0F\u20E3"
+                emoji_string_two =  "2\uFE0F\u20E3"
+                emoji_string_three = "3\uFE0F\u20E3"
+                
+                chosen_video = await ctx.send("Pick the video you want to play by reacting to this message:")
+                
+                await chosen_video.add_reaction(emoji_string_one)
+                await chosen_video.add_reaction(emoji_string_two)
+                await chosen_video.add_reaction(emoji_string_three)
+
+                await ctx.send("{} : {}".format(emoji_string_one, info["entries"][0]["title"]))
+                await ctx.send("{} : {}".format(emoji_string_two, info["entries"][1]["title"]))
+                await ctx.send("{} : {}".format(emoji_string_three, info["entries"][2]["title"]))
+                
+                new_video = None
+                def check(reaction, user):
+                    return user == ctx.author and str(reaction.emoji) is not None            
+                try:
+                    reaction, user = await self.bot.wait_for('reaction_add', timeout=15.0, check=check)
+                except asyncio.TimeoutError:
+                    await ctx.send("You didn't pick in time, not gonna do anything")
+                    return
+                else:
+                    if str(reaction.emoji) == emoji_string_one:
+                        new_video = info["entries"][0]["webpage_url"]
+                        info = info["entries"][0]
+                    if str(reaction.emoji) == emoji_string_two:
+                        new_video = info["entries"][1]["webpage_url"]
+                        info = info["entries"][1]
+                    if str(reaction.emoji) == emoji_string_three:
+                        new_video = info["entries"][2]["webpage_url"]
+                        info = info["entries"][2]                
+                    await ctx.send("I will now play: {}".format(new_video))
 
 
         playurl = ''
         maxbitrate = -1;
-        # for i in info:
-        #     print(i)
+
         for i in info['formats']:
             if i['format_id'] == '18':
                 playurl = i['url']
                 maxbitrate = i['filesize']
                 break;
-        print(info['url'])
-        print(info['webpage_url'])
+        logger.debug(info['url'])
+        logger.debug(info['webpage_url'])
                 
         
 
         url = info['webpage_url']
 
         video_title = info['title']
-        # self.vc = ctx.voice_client
-        
 
         if self.vc is None:
             self.vc = await voice.channel.connect()
@@ -146,80 +142,23 @@ class LinkPlayer(commands.Cog):
         await self.audioplayer.place_in_queue(ctx, TaggedAudioSource(playurl, tag=video_title))
 
         return
-    # playerCommand is a template function for controlling the bot who's currently playing music
-    # Input:
-    # ctx: discord context
-    # vc: voice channel object from context
-    # callback: what function to use i.e. vc.pause(), vc.resume()
-    # oppositeState: what to check to avoid contradiction i.e. isPlaying() is opposite state to pause() command
-    # errorString: message about the state and why it can't happen i.e. User tried to pause already paused video
-
-    async def playerCommand(self, ctx, callback, errorString="Can't do that yet"):
-        print('messing with player')
-
-        # Gets voice channel of message author
-
-        print (str(ctx.author) + " played used a command")
-        voice_channel = ctx.author.voice
-        channel = None
-
-        if voice_channel != None:
-            self.vc = ctx.voice_client
-
-            try:
-                callback()
-            except Exception:
-                await vc.disconnect()
-                logging.warning('Failed vc callback function')
-                print('Failed vc callback function')
-                sent_message = await ctx.send(errorString)
-                await sent_message.delete(delay=5)        
-
-        else:
-            sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
-            await sent_message.delete(delay=5)
-        # # Delete command after the audio is done playing.
-        # await ctx.message.delete()
 
     @commands.command(name='pause', help='pause the bot playing something')
     async def pause(self, ctx):
-        print("pausing")
-        # vc = ctx.voice_client
-        self.playQueue.stop() # this pauses the playQueue task and can be started again        
-        await self.playerCommand(ctx, self.vc.pause, "Can't pause already paused song")
-        
-        # await ctx.message.delete()
+        await self.audioplayer.pause(ctx)
 
     @commands.command(name='stop', help='stop the music bot')
     async def stop(self, ctx):
-        print("stopping")
-        # vc = ctx.voice_client
-        await self.playerCommand(ctx, self.vc.stop, "Can't stop audio that is not connected to channel")
-        # self.playQueue.cancel()
-        if not self.music_queue.empty():
-            self.music_queue = queue.queue(m_queue_size)
-        # await ctx.message.delete()
+        await self.audioplayer.stop(ctx)
 
     @commands.command(name='skip', help='skip current song for next in queue')
     async def skip(self, ctx):
-        print("skipping")
-        # vc = ctx.voice_client
-        await self.playerCommand(ctx, self.vc.stop, "Can't stop audio that is not connected to channel")
+        await self.audioplayer.skip(ctx)
         
     @commands.command(name='resume', help='resume the music bot')
     async def resume(self, ctx):
-        print("resuming")
-        # vc = ctx.voice_client
-        await self.playerCommand(ctx, self.vc.resume, "Can't resume audio that is not connected to channel")
-        self.playQueue.start()
-        # await ctx.message.delete()
+        await self.audioplayer.resume(ctx)
 
     @commands.command(name='leave', help="tell the bot to leave the command because I'm too lazy to find out where to put a time out")
     async def leave(self, ctx):
-        print("leaving channel")
-        await ctx.voice_client.disconnect()
-        self.playQueue.cancel()
-        self.vc = None
-        if not self.music_queue.empty():
-            self.music_queue = queue.queue(m_queue_size)
-        # await ctx.message.delete()
+        await self.audioplayer.leave(ctx)

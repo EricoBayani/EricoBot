@@ -5,7 +5,7 @@ import yt_dlp
 import json
 import re
 from Config import *
-from AudioPlayer import TaggedAudioSource
+from AudioPlayer import TaggedAudioSource, AudioPlayer
 import queue
 import os.path
 
@@ -39,33 +39,35 @@ ffmpeg_options = {
 class LinkPlayer(commands.Cog):
     # https://stackoverflow.com/a/66116633 for the audio streaming options
 
-    def __init__(self, bot, audioplayer = None):
+    def __init__(self, bot, logger = None, audioplayers = None):
         self.bot = bot
+        self.logger = logger
         self.music_queue = queue.Queue(m_queue_size)
         self.music_queue_timeout = voice_timeout
         self.music_queue_time = 0.0
         self.vc = None
         # TODO: should it be a fatal exception if audioplayer is None? It shouldn't happen, 
         # but if it does wouldn't it be good if I fixed the global audio player? 
-        self.audioplayer = audioplayer
+        self.audioplayers = audioplayers
 
     
     @commands.command(name='play', help='play audio from a youtube link or from regular words wrapped around in quotes')
     async def play(self, ctx, *query):
 
-        logger.debug('Attempting to play linked music')
+        self.logger.debug('Attempting to play linked music')
         await ctx.typing()
         
         voice = ctx.author.voice
 
         if voice is None:
             sent_message = await ctx.send(str(ctx.author.name) + " is not in a channel.")
-            await sent_message.delete(delay=5)     
+            await sent_message.delete(delay=5)
+            return
 
-        logger.debug(query)
+        self.logger.debug(query)
         if not query:
             no_url_message = await ctx.send("There is no query")
-            logger.debug('there was no query')
+            self.logger.debug('there was no query')
             await no_url_message.delete(delay=3)
             return
 
@@ -82,7 +84,7 @@ class LinkPlayer(commands.Cog):
             info = ytdl.extract_info(query, download=False)
 
             if 'entries' in info:
-                logger.debug("There were multiple entries to choose")
+                self.logger.debug("There were multiple entries to choose")
 
                 emoji_string_one = "1\uFE0F\u20E3"
                 emoji_string_two =  "2\uFE0F\u20E3"
@@ -127,8 +129,8 @@ class LinkPlayer(commands.Cog):
                 playurl = i['url']
                 maxbitrate = i['filesize']
                 break;
-        logger.debug(info['url'])
-        logger.debug(info['webpage_url'])
+        self.logger.debug(info['url'])
+        self.logger.debug(info['webpage_url'])
                 
         
 
@@ -136,29 +138,31 @@ class LinkPlayer(commands.Cog):
 
         video_title = info['title']
 
-        if self.vc is None:
-            self.vc = await voice.channel.connect()
+        if ctx.guild.id not in self.audioplayers:
+            print (ctx.guild.id)
+            self.audioplayers[ctx.guild.id] = AudioPlayer(self.bot, ctx, self.logger)
+            print(f"There are now {len(self.audioplayers)} audioplayers")
 
-        await self.audioplayer.place_in_queue(ctx, TaggedAudioSource(playurl, tag=video_title))
+        await self.audioplayers[ctx.guild.id].place_in_queue(ctx, TaggedAudioSource(playurl, tag=video_title))
 
         return
 
     @commands.command(name='pause', help='pause the bot playing something')
     async def pause(self, ctx):
-        await self.audioplayer.pause(ctx)
+        await self.audioplayers[ctx.guild.id].pause(ctx)
 
     @commands.command(name='stop', help='stop the music bot')
     async def stop(self, ctx):
-        await self.audioplayer.stop(ctx)
+        await self.audioplayers[ctx.guild.id].stop(ctx)
 
     @commands.command(name='skip', help='skip current song for next in queue')
     async def skip(self, ctx):
-        await self.audioplayer.skip(ctx)
+        await self.audioplayers[ctx.guild.id].skip(ctx)
         
     @commands.command(name='resume', help='resume the music bot')
     async def resume(self, ctx):
-        await self.audioplayer.resume(ctx)
+        await self.audioplayers[ctx.guild.id].resume(ctx)
 
     @commands.command(name='leave', help="tell the bot to leave the command because I'm too lazy to find out where to put a time out")
     async def leave(self, ctx):
-        await self.audioplayer.leave(ctx)
+        await self.audioplayers[ctx.guild.id].leave(ctx)

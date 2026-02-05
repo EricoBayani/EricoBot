@@ -1,8 +1,3 @@
-# bot.py
-
-
-# from datetime import datetime
-# from json_writer import JSON_Writer
 import sys
 import os
 #local modules
@@ -16,14 +11,16 @@ from PlayMusicCommands import LinkPlayer
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=[regular_prefix, regular_prefix_lower, kent_prefix, kent_prefix_lower, '!e '], case_insensitive=True, intents = intents)
+logger = logging.getLogger('discord')
 
-audioplayer = AudioPlayer(bot)
+# stupid dict to hold contexts and their audioplayers. 
+audioplayers = {}
 
 @bot.event
 async def on_ready():
     # await bot.add_cog(AudioPlayer(bot))
-    await bot.add_cog(LinkPlayer(bot, audioplayer))
-    await bot.add_cog(ClipPlayer(bot, audioplayer))
+    await bot.add_cog(LinkPlayer(bot, logger, audioplayers))
+    await bot.add_cog(ClipPlayer(bot, logger, audioplayers))
     # await bot.add_cog(AskWiki(bot))
     assert bot.user is not None
     print('Current Python version is ', sys.version)

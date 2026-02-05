@@ -2,21 +2,23 @@
 
 from Config import *
 from discord.ext import commands
-from AudioPlayer import TaggedAudioSource
+from AudioPlayer import TaggedAudioSource, AudioPlayer
+
 
 class ClipPlayer(commands.Cog):    
 
     # a generic command that will play any sound file into
     # voice when passed a file path to the sound.
 
-    def __init__(self, bot, audioplayer = None):
+    def __init__(self, bot, logger = None, audioplayers = None):
         self.bot = bot
+        self.logger = logger
         # jokes dictionary for easy random selection    
         self.jokes_dict = {}
         self.jokes_dict["brick_sucks"] = local_path + "brick-sucks.mp3"
         # TODO: should it be a fatal exception if audioplayer is None? It shouldn't happen, 
         # but if it does wouldn't it be good if I fixed the global audio player? 
-        self.audioplayer = audioplayer
+        self.audioplayers = audioplayers
 
 
     async def play_audio(self, ctx, source_file, command_name='localfile'):
@@ -37,7 +39,12 @@ class ClipPlayer(commands.Cog):
                     print(f'Exception during voice channel connect: {e}')
                     return
             # vc.stop()
-            await self.audioplayer.place_in_queue(ctx, TaggedAudioSource(source_file, tag=command_name))
+
+            if ctx.guild.id not in self.audioplayers:
+                print (ctx.guild.id)
+                self.audioplayers[ctx.guild.id] = AudioPlayer(self.bot, ctx, self.logger)
+                print(f"There are now {len(self.audioplayers)} audioplayers")
+            await self.audioplayers[ctx.guild.id].place_in_queue(ctx, TaggedAudioSource(source_file, tag=command_name))
 
             # # Sleep while audio is playing.
             #while vc.is_playing():

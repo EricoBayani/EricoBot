@@ -10,3 +10,4 @@ Run the command  `python3 ericobot.py`
 ## Work in Progress Features
 - Periodically post messages such as Youtube links
 - Respond to verbal commands
+- Make this bot join multiple voice channels in multiple servers

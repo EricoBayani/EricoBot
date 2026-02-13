@@ -3,7 +3,7 @@ name = "ericobot"
 version = "0.1.0"
 description = "My personal discord bot, mainly for playing music in VC"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "aiohttp==3.7.4.post0",
     "async-timeout>=3.0.1",
